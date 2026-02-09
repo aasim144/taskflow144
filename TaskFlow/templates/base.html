@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}TaskFlow{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/landing.css">
+</head>
+<body>
+
+<!-- FIXED NAVBAR -->
+<nav class="navbar">
+  <div class="logo">TaskFlow
+   </div>
+
+  <ul class="nav-links">
+    <li><a href="/" id="navlis">Home</a></li>
+    {% if session.get("user_id") %}
+    <li><a href="/dashboard" id="navlis">Dashboard</a></li>
+    {% else %}
+    <li><a href="/login" id="navlis">Dashboard</a></li>
+    {% endif %}
+
+    {% if session.get("user_id") %}
+      <li><a href="/logout" id="navlis">Logout</a></li>
+    {% else %}
+      <li><a href="/login" id="navlis">Login</a></li>
+      <li><a href="/register" class="btn">Get Started</a></li>
+    {% endif %}
+  </ul>
+  <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" style="height: 35px; width: 60px; margin-top: -3px;"><img src="/static/img/night-mode.png" alt="dark" id="themeIcon" style="height: 20px;"><span class="tooltip" id="themeTooltip">Dark mode</span></button>
+       
+ 
+
+</nav>
+
+<!-- PAGE CONTENT -->
+<div class="page-content">
+  {% block content %}{% endblock %}
+</div>
+
+<script src="/static/js/them.js"></script>
+
+</body>
+</html>

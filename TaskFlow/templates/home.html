@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TaskFlow - AI-Based Project Management</title>
+  <link rel="stylesheet" href="/static/css/landing.css">
+</head>
+<body>
+
+{% extends "base.html" %}
+
+{% block title %}TaskFlow – User Board{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-text">
+    <h1>Manage Projects.<br>Smarter. Faster.</h1>
+    <p>Plan, track and complete projects with AI-powered workflows.</p>
+    <div class="hero-buttons">
+      {% if session.get("user_id") %}
+      <a href="/dashboard" class="primary" style="font-weight: 500;">Start Free</a>
+      {% else %}
+      <a href="/register" class="primary" style="font-weight: 500;">Start Free</a>
+      {% endif %}
+      <a href="#features" class="secondary" style="font-weight: 500;">See How</a>
+    </div>
+  </div>
+
+  <div class="hero-card" style="background-color: rgba(148, 148, 148, 0.054); ">
+    <div class="card-column">
+      <h4>To Do</h4>
+      <div class="card">Design UI</div>
+      <div class="card">Setup DB</div>
+    </div>
+    <div class="card-column">
+      <h4>In Progress</h4>
+      <div class="card progress">API Integration</div>
+    </div>
+    <div class="card-column">
+      <h4>Done</h4>
+      <div class="card done">Login System</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <h2>Why TaskFlow?</h2>
+  <div class="feature-grid">
+    <div class="feature">📊 Smart Task Board</div>
+    <div class="feature">🤖 AI Project Planner</div>
+    <div class="feature">⚡ Drag & Drop Workflow</div>
+    <div class="feature">📈 Progress Tracking</div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section class="workflow" id="workflow">
+  <h2>Simple Workflow</h2>
+  <p>Create → Plan → Track → Complete</p>
+</section>
+
+<footer>
+  © TaskFlow - AI-Based Project Management System | LJ INNOVATION VILLAGE 2026
+</footer>
+
+{% endblock %}
+
+<script src="/static/js/landing.js"></script>
+</body>
+</html>

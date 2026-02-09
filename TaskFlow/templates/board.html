@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Board</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-project-id="{{ project_id }}">
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="dashb">
+
+<div class="sidebar">
+<div class="sidebarbuts1">
+<button id="membersBtn" class="sidebarbut"><img src="/static/img/add-group-white.png" alt="add-member" height="16px" style="margin-right: 10px;" id="imgmem">Members</button><br>
+
+
+  <div id="memberModal" class="modal">
+  <div class="modal-box">
+    <h3 style="font-size: 25px; text-align: center; margin-bottom: 10px; color: rgba(0, 0, 0, 0.802);">Members</h3>
+    <hr><br>
+
+    <!-- Add member -->
+    <div class="member-add">
+      <input type="email" id="memberEmail" placeholder="Enter email" />
+      <select id="memberRole">
+        <option value="Admin">Admin</option>
+        <option value="Editor">Editor</option>
+        <option value="Viewer">Viewer</option>
+      </select>
+      <button onclick="addMember()" title="Add member">Add</button>
+    </div>
+
+    <!-- Member list -->
+    <ul id="memberList"></ul>
+
+    <button class="close-btn" onclick="closeModal()" title="Close popup">Close</button>
+  </div>
+  </div>
+<button id="membersBtn" class="sidebarbut"><img src="/static/img/home.png" alt="home" height="16px" style="margin-right: 10px;" id="imgmem1">Home</button>
+</div>
+</div>
+
+
+
+
+
+<div class="tasksc" id="tasksc">
+
+<div class="titlep">
+<h4>ABDE</h4>
+</div>
+
+<div class="board">
+
+  <!-- TODO -->
+  <div class="list" data-status="To Do">
+    <h3>To Do</h3>
+    <div class="cards" id="todo"></div>
+    <div class="add-card" onclick="showInput(this)">+ Add a card</div>
+    <div class="add-input">
+      <textarea rows="2" placeholder="Enter title"></textarea>
+      <button class="add-but" onclick="addTask(this,'To Do')" style="background-color: #0079bf;">Add</button>
+      <button class="cancel-but" onclick="cancelAdd(this)" style="background-color: #d7d7d7; color: black; text-align: center;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- In Progress -->
+  <div class="list" data-status="In Progress">
+    <h3>In Progress</h3>
+    <div class="cards" id="progress"></div>
+    <div class="add-card" onclick="showInput(this)">+ Add a card</div>
+    <div class="add-input">
+      <textarea rows="2"></textarea>
+      <button onclick="addTask(this,'In Progress')" class="add-but" style="background-color: #0079bf;">Add</button>
+      <button class="cancel-but" onclick="cancelAdd(this)" style="background-color: #d7d7d7; color: black; text-align: center;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Done -->
+  <div class="list" data-status="Done">
+    <h3>Done</h3>
+    <div class="cards" id="done"></div>
+    <div class="add-card" onclick="showInput(this)">+ Add a card</div>
+    <div class="add-input">
+      <textarea rows="2"></textarea>
+      <button onclick="addTask(this,'Done')" class="add-but" style="background-color: #0079bf;">Add</button>
+      <button class="cancel-but" onclick="cancelAdd(this)" style="background-color: #d7d7d7; color: black; text-align: center;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+const PROJECT_ID = {{ project_id }};
+
+function showInput(btn){ btn.style.display="none"; btn.nextElementSibling.style.display="flex"; }
+
+
+function editTask(btn){ const title = btn.closest(".card").querySelector(".card-title"); title.contentEditable=true; title.focus(); }
+function deleteTask(id){ if(!confirm("Delete this task?")) return; fetch("/delete-task",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}).then(loadTasks); }
+
+function addTask(btn,status){
+  const val = btn.previousElementSibling.value.trim(); if(!val) return;
+  fetch("/add-task",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:val,status,project_id:PROJECT_ID})}).then(loadTasks);
+  btn.previousElementSibling.value="";
+  btn.parentElement.style.display="none";
+  btn.parentElement.previousElementSibling.style.display="block";
+
+}
+
+
+
+function cancelAdd(btn) {
+  const inputBox = btn.closest(".add-input");
+  inputBox.style.display = "none";
+  inputBox.querySelector("textarea").value = "";
+  inputBox.previousElementSibling.style.display = "block";
+}
+
+function openAdd(btn) {
+  btn.style.display = "none";
+  const inputBox = btn.nextElementSibling;
+  inputBox.style.display = "flex";
+  inputBox.querySelector("textarea").focus();
+}
+
+function loadTasks(){
+  fetch(`/get-tasks/${PROJECT_ID}`).then(r=>r.json()).then(tasks=>{
+    todo.innerHTML=""; progress.innerHTML=""; done.innerHTML="";
+    tasks.forEach(t=>{
+      const card=createCard(t);
+      if(t.status==="To Do") todo.appendChild(card);
+      if(t.status==="In Progress") progress.appendChild(card);
+      if(t.status==="Done") done.appendChild(card);
+    });
+  });
+}
+
+// Drag & Drop
+["todo","progress","done"].forEach(id => {
+  const cards = document.getElementById(id);
+  const list = cards.closest(".list");
+
+  cards.addEventListener("dragover", e => {
+    e.preventDefault();
+    list.classList.add("drag-over");
+  });
+
+  cards.addEventListener("dragleave", e => {
+    if (!cards.contains(e.relatedTarget)) {
+      list.classList.remove("drag-over");
+    }
+  });
+
+  cards.addEventListener("drop", e => {
+    e.preventDefault();
+    list.classList.remove("drag-over");
+
+    const tid = e.dataTransfer.getData("id");
+    const status = list.dataset.status;
+
+    fetch("/update-status", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ id: tid, status })
+    }).then(loadTasks);
+  });
+});
+
+
+let draggedCard = null;
+let placeholder = document.createElement("div");
+placeholder.className = "drag-placeholder";
+
+document.addEventListener("dragstart", e => {
+  const card = e.target.closest(".card");
+  if (!card) return;
+
+  draggedCard = card;
+  card.classList.add("dragging");
+
+  setTimeout(() => {
+    card.style.display = "none";
+  }, 0);
+});
+
+document.addEventListener("dragend", () => {
+  if (!draggedCard) return;
+
+  draggedCard.style.display = "block";
+  draggedCard.classList.remove("dragging");
+  placeholder.remove();
+  draggedCard = null;
+});
+
+
+
+document.querySelectorAll(".cards").forEach(container => {
+
+  container.addEventListener("dragover", e => {
+    e.preventDefault();
+    const list = container.closest(".list");
+    list.classList.add("drag-over");
+
+    if (!container.contains(placeholder)) {
+      container.appendChild(placeholder);
+    }
+  });
+
+  container.addEventListener("dragleave", e => {
+    if (!container.contains(e.relatedTarget)) {
+      container.closest(".list").classList.remove("drag-over");
+      placeholder.remove();
+    }
+  });
+
+  container.addEventListener("drop", e => {
+    e.preventDefault();
+
+    const list = container.closest(".list");
+    list.classList.remove("drag-over");
+
+    container.appendChild(draggedCard);
+    placeholder.remove();
+
+    const status = list.dataset.status;
+    const id = draggedCard.dataset.id;
+
+    fetch("/update-status", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ id, status })
+    }).then(loadTasks);
+  });
+});
+
+
+
+window.onload = loadTasks;
+
+
+function createCard(task) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.draggable = true;
+  card.dataset.id = task.id;
+
+  card.innerHTML = `
+    <div class="tick ${task.status === "Done" ? "done" : ""}"></div>
+    <div class="card-title">${task.title}</div>
+    <div class="actions">
+      <button onclick="editTask(this)">
+        <img src="/static/img/edit.png" alt="edit" id="buted">
+      </button>
+      <button onclick="deleteTask(${task.id})">
+        <img src="/static/img/bin.png" alt="bin" id="buted">
+      </button>
+    </div>
+  `;
+
+  const tick = card.querySelector(".tick");
+  const title = card.querySelector(".card-title");
+
+  // ✔ default done state
+  if (task.status === "Done") {
+    card.classList.add("completed");
+    title.style.textDecoration = "line-through";
+  }
+
+  // ✔ tick click
+  tick.addEventListener("click", e => {
+    e.stopPropagation();
+
+    const done = !card.classList.contains("completed");
+    card.classList.toggle("completed", done);
+    tick.classList.toggle("done", done);
+    title.style.textDecoration = done ? "line-through" : "none";
+
+    fetch("/update-status", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        id: task.id,
+        status: done ? "Done" : "To Do"
+      })
+    });
+  });
+
+  // ✔ drag
+  card.addEventListener("dragstart", e => {
+    card.classList.add("dragging");
+    e.dataTransfer.setData("id", task.id);
+  });
+
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+  });
+
+  return card;
+}
+
+
+
+function editTask(btn) {
+  const card = btn.closest(".card");
+  const titleDiv = card.querySelector(".card-title");
+  const oldText = titleDiv.innerText;
+
+  titleDiv.innerHTML = `
+    <textarea class="edit-textarea">${oldText}</textarea>
+    <div class="edit-actions">
+      <button class="save-btn">Save</button>
+      <button class="cancel-btn">Cancel</button>
+    </div>
+  `;
+
+  const textarea = titleDiv.querySelector("textarea");
+  textarea.focus();
+
+  // SAVE
+  titleDiv.querySelector(".save-btn").onclick = () => {
+    const newText = textarea.value.trim();
+    if (!newText) return alert("Task title cannot be empty");
+
+    fetch("/update-task", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        id: card.dataset.id,
+        title: newText
+      })
+    }).then(() => location.reload());
+  };
+
+  // CANCEL
+  titleDiv.querySelector(".cancel-btn").onclick = () => {
+    titleDiv.innerText = oldText;
+  };
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const board = document.getElementById("tasksc");
+  const template = localStorage.getItem("selectedBoardTemplate");
+
+  if (template) {
+    board.classList.add(template);
+  } else {
+    board.classList.add("template-co"); // default
+  }
+});
+
+const modal = document.getElementById("memberModal");
+
+document.getElementById("membersBtn").onclick = () => {
+  modal.style.display = "flex";
+};
+
+function closeModal() {
+  modal.style.display = "none";
+}
+
+
+let members = [];
+
+function addMember() {
+  const email = document.getElementById("memberEmail").value;
+  const role = document.getElementById("memberRole").value;
+
+  fetch("/add-member", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      project_id: projectId,
+      email: email,
+      role: role
+    })
+  })
+  .then(() => loadMembers());
+  
+
+  document.getElementById("memberEmail").value = "";
+}
+
+
+
+function removeMember(id) {
+  fetch("/remove-member", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  })
+  .then(() => loadMembers());
+}
+
+
+const projectId = document.body.dataset.projectId;
+
+function loadMembers() {
+  fetch(`/get-members/${projectId}`)
+    .then(res => res.json())
+    .then(data => {
+      members = data;
+      renderMembers();
+    });
+}
+
+document.addEventListener("DOMContentLoaded", loadMembers);
+
+function renderMembers() {
+  const list = document.getElementById("memberList");
+  list.innerHTML = "";
+
+  members.forEach(m => {
+    list.innerHTML += `
+      <li class="member-item">
+        <span>${m.email}</span>
+        <span class="member-role">${m.role}</span>
+        <button class="remove-btn" onclick="removeMember(${m.id})" title="Remove Member">✖</button>
+      </li>
+    `;
+  });
+}
+
+
+
+window.onload = () => {
+  loadTasks();
+  loadMembers();
+};
+
+
+
+</script>
+
+{% endblock %}
+</body>
+</html>
